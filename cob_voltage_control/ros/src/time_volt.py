@@ -120,14 +120,22 @@ def main(argv):
 ####################
              
     with open(filename, 'rb') as csvfile:
-
+        vmax = 48000
         csvreader = csv.reader(csvfile, delimiter=' ', quotechar='|')
         for row in csvreader:
             row = row[0].split(',')
-            volt_v = (float)(row[1])
-            if(volt_v < 48000 and volt_v > 44000):
+            if ("raw" in robot_name):
+                volt_v = (float)(row[1])*1000#
+                vmin = 35000
+            else:
+                volt_v = (float)(row[1])
+                vmin = 45000
+            if(volt_v < vmax and volt_v > vmin):
                 time_values.append((float)(row[0]))
-                volt_values.append((float)(row[1]))
+                volt_values.append(volt_v)
+            elif(volt_v< vmin):
+                print "BREAK"
+                break
 
     time_values[:] = [x - time_values[0] for x in time_values]
     time_values = time_values[::-1]
@@ -176,8 +184,8 @@ def main(argv):
     pylab.figure(2)
     
     pylab.ylabel("Residuals(s)")
-    pylab.xlabel("Voltage(mV)")
-    pylab.title("Residuals x Voltage,file="+ filename.replace('.csv',''))
+    pylab.xlabel("Time(s)")
+    pylab.title("Residuals x Time,file="+ filename.replace('.csv',''))
     
     #Evaluating the polynomial through all the volt values
     z1_val = np.polyval(z1, volt_values)
@@ -207,7 +215,10 @@ def main(argv):
     
     pylab.subplot(211)
     
-    pylab.plot(voltArray, time_values)
+    pylab.plot(time_values, voltArray)
+    
+    ax = pylab.gca()
+    ax.set_xlim(ax.get_xlim()[::-1])
     
     pylab.grid(True)
     pylab.title('Comparison between real and filtered data')
@@ -215,9 +226,12 @@ def main(argv):
     
     pylab.subplot(212)
     
-    pylab.plot(values_filt, time_values)
-    
+    pylab.plot(time_values, values_filt)
+    ax = pylab.gca()
+    ax.set_xlim(ax.get_xlim()[::-1])
+
     pylab.grid(True)
+
     pylab.ylabel('Filtered Values(mV)')
     pylab.xlabel('Time(s)')
     
@@ -273,8 +287,8 @@ def main(argv):
     pylab.figure(5)
     
     pylab.ylabel("Residuals(s)")
-    pylab.xlabel("Voltage(mV)")
-    pylab.title("Residuals x Voltage,file="+ filename.replace('.csv',''))
+    pylab.xlabel("Time(s)")
+    pylab.title("Residuals x Time,file="+ filename.replace('.csv',''))
     
     #Evaluating the polynomial through all the time values
     z1_val = np.polyval(z1, values_filt)
@@ -311,9 +325,9 @@ def main(argv):
         #####
         pylab.figure(7)
         
-        pylab.ylabel("Time available(seconds)")
-        pylab.xlabel("Voltage(mV)")
-        pylab.title("Time x Volt,file="+ filename.replace('.csv',''))
+        pylab.ylabel("Voltage(mV)")
+        pylab.xlabel("Time available(seconds)")
+        pylab.title("Volt x Time,file="+ filename.replace('.csv',''))
         pylab.grid(True)
 
         poly_vals = np.polyval(abcd, values_filt)
@@ -324,29 +338,29 @@ def main(argv):
         #new_x = values_filt*cos(theta) - poly_vals*sin(theta)
         #new_y = values_filt*sin(theta) + poly_vals*cos(theta)
 
-        theta = -0.2
+        theta = -0.4 #-0.2
         theta_values = []
         cost_values = []
         off_values = []
 
-        while theta < 0.2:
+        while theta < 0.0: #0.2
             theta +=0.01
             new_x = values_filt*cos(theta) - poly_vals*sin(theta)
             new_y = values_filt*sin(theta) + poly_vals*cos(theta)
 
 
-            off_y = -6000
+            off_y = 0
 
             cost_values_i =[]
             off_y_values_i=[]
 
-            while off_y < 6000:
+            while off_y < 30000: #6000
                 off_y +=200
                 new_y_temp = new_y
                 new_y_temp = new_y_temp + off_y
 
                 ss1=ss(time_values,new_y_temp)
-                print ss1, off_y
+                
 
                 cost_values_i.append(ss1)
                 off_y_values_i.append(off_y)
@@ -354,8 +368,10 @@ def main(argv):
             #ss1=ss(time_values,new_y)
             #print ss1, theta
             #cost_values.append(ss1)
+            
             theta_values.append(theta)
             cost_min = min(cost_values_i)
+            print theta, cost_min, off_y
             cost_min_index = cost_values_i.index(cost_min)
             cost_values.append(cost_values_i[cost_min_index])
             off_values.append(off_y_values_i[cost_min_index])
@@ -376,9 +392,14 @@ def main(argv):
         yl["off_y"] = off_y
         yl["maximum_time"] = (float)(new_y[0])
 
-        pylab.plot(poly_vals, values_filt, time_values, values_filt, new_y, values_filt)
+        pylab.plot(poly_vals, values_filt,time_values, values_filt,new_y, values_filt)
+        
+        ax = pylab.gca()
+        ax.set_xlim(ax.get_xlim()[::-1])
+        
+        pylab.grid(True)
 
-        pylab.legend(('Poly not moving', 'Real', 'Shifted Fit'))
+        pylab.legend(('Standby Polynomial', 'Measurement from scenario mode', 'Fitted Curve'))
     
     yaml.safe_dump(yl, yaml_file,default_flow_style=False)
     
