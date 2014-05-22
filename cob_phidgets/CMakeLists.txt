@@ -55,6 +55,9 @@ include_directories(${PROJECT_SOURCE_DIR}/ros/include ${PROJECT_SOURCE_DIR}/comm
 add_executable(range_sensors ros/src/phidgets_range_sensors.cpp)
 target_link_libraries(range_sensors ${catkin_LIBRARIES})
 
+add_executable(push_buttons ros/src/phidgets_push_buttons.cpp)
+target_link_libraries(push_buttons ${catkin_LIBRARIES})
+
 add_executable(device_name ros/src/set_device_name.cpp)
 add_dependencies(device_name ${PROJECT_NAME}_gencpp)
 target_link_libraries(device_name ${catkin_LIBRARIES})
