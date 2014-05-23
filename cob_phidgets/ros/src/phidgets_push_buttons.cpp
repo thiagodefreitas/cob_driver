@@ -98,6 +98,11 @@ public:
     {
         return val_;
     }
+
+    std::string getFrameID()
+    {
+        return frame_id_;
+    }
 };
 
 void display_generic_properties(CPhidgetHandle phid)
@@ -209,6 +214,7 @@ int main(int argc, char **argv)
     /* This adds the Server to be called to get the actual state of the buttons */
     ros::ServiceServer service = nh_.advertiseService("button_state",update_button_state);
     ros::ServiceClient client = nh_.serviceClient<cob_srvs::SetString>("button_state");
+    cob_srvs::SetString setStr;
 
 	CPhidgetInterfaceKitHandle IFK = 0;
 	CPhidget_enableLogging(PHIDGET_LOG_VERBOSE, NULL);
@@ -243,12 +249,30 @@ int main(int argc, char **argv)
 	ROS_INFO(
             "buttons:%d Inputs:%d Outputs:%d", numbuttons, numInputs, numOutputs);
 
+
 	while (ros::ok())
     {
-        //for (size_t i = 0; i < g_buttons.size(); i++)
-        //     g_buttons[i].publish();
+        ros::spin();
 
-		ros::spinOnce();
+        for (size_t i = 0; i < g_buttons.size(); i++)
+        {
+            setStr.request.data = g_buttons[i].getFrameID();
+
+            if (client.call(setStr))
+            {
+                std::string error_msg = setStr.response.errorMessage.data;
+                ROS_INFO("Message from Button: %s", error_msg.c_str());
+            }
+            else
+            {
+                ROS_ERROR("Failed to call service button_state");
+            return 1;
+            }
+
+        }
+
+
+
 		loop_rate.sleep();
 	}
 
