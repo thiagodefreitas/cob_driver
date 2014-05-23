@@ -87,15 +87,22 @@ bool update_button_state(cob_srvs::SetString::Request  &req,
 {
 
   if(buttons_map.find( req.data ) != buttons_map.end())
+  {
     ROS_INFO("Setting button state to: %d", (*g_buttons)[buttons_map[req.data]].getVal());
+    if((*g_buttons)[buttons_map[req.data]].getVal())
+      res.errorMessage.data = ("Button ON");
+
+    else
+      res.errorMessage.data = "Button OFF";
+  }
+  else
+  {
+      res.errorMessage.data = ("The requested button does not exist.");
+  }
 
   res.success = true;
 
-  if((*g_buttons)[buttons_map[req.data]].getVal())
-    res.errorMessage.data = ("Button ON");
 
-  else
-    res.errorMessage.data = "Button OFF";
 
   return true;
 }
