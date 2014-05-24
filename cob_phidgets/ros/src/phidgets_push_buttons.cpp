@@ -65,7 +65,7 @@
 #include <libphidgets/phidget21.h>
 #include <sstream>
 
-
+std::string led_mode = "off";
 
 class Button
 {
@@ -134,13 +134,21 @@ int CCONV InputChangeHandler(CPhidgetInterfaceKitHandle IFK, void *userptr,
         int Index, int State)
 {
 
+    led_mode = "off";
+    int count = 0;
+    
     g_buttons = (std::vector<Button>*) userptr;
     for (size_t i = 0; i < g_buttons->size(); i++)
         if ((*g_buttons)[i].getId() == Index)
         {
             (*g_buttons)[i].update(State);
-            std::cout << State;
+            if(State==1 && count==0)
+                led_mode = "on";
+            
         }
+        
+       
+
     return 0;
 }
 
@@ -154,7 +162,10 @@ bool update_button_state(cob_srvs::SetString::Request  &req,
   {
     ROS_INFO("Setting button state to: %d", (*g_buttons)[buttons_map[req.data]].getVal());
     if((*g_buttons)[buttons_map[req.data]].getVal())
+    {
       res.errorMessage.data = ("Button ON");
+      
+     }
 
     else
       res.errorMessage.data = "Button OFF";
@@ -213,8 +224,9 @@ int main(int argc, char **argv)
 
     /* This adds the Server to be called to get the actual state of the buttons */
     ros::ServiceServer service = nh_.advertiseService("button_state",update_button_state);
-    ros::ServiceClient client = nh_.serviceClient<cob_srvs::SetString>("button_state");
+    ros::ServiceClient client = nh_.serviceClient<cob_srvs::SetString>("led_control/set_mode");
     cob_srvs::SetString setStr;
+    
 
 	CPhidgetInterfaceKitHandle IFK = 0;
 	CPhidget_enableLogging(PHIDGET_LOG_VERBOSE, NULL);
@@ -226,6 +238,7 @@ int main(int argc, char **argv)
 	//opening phidget
 	CPhidget_open((CPhidgetHandle) IFK, -1);
 
+	std::string prev_led_mode;
 	//wait 5 seconds for attachment
 	ROS_INFO("waiting for phidgets attachement...");
 	if ((err = CPhidget_waitForAttachment((CPhidgetHandle) IFK, 10000))
@@ -249,31 +262,28 @@ int main(int argc, char **argv)
 	ROS_INFO(
             "buttons:%d Inputs:%d Outputs:%d", numbuttons, numInputs, numOutputs);
 
-
 	while (ros::ok())
     {
         ros::spin();
+		loop_rate.sleep();
+		
+        setStr.request.data = led_mode;
 
-        for (size_t i = 0; i < g_buttons.size(); i++)
+        if(led_mode != prev_led_mode)
         {
-            setStr.request.data = g_buttons[i].getFrameID();
-
             if (client.call(setStr))
             {
                 std::string error_msg = setStr.response.errorMessage.data;
-                ROS_INFO("Message from Button: %s", error_msg.c_str());
+                ROS_INFO("Message to Button: %s", error_msg.c_str());
             }
             else
             {
                 ROS_ERROR("Failed to call service button_state");
-            return 1;
+                return 1;
             }
-
         }
 
-
-
-		loop_rate.sleep();
+        prev_led_mode = led_mode;
 	}
 
 	exit: CPhidget_close((CPhidgetHandle) IFK);
