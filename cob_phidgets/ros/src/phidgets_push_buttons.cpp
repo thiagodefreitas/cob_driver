@@ -160,7 +160,7 @@ bool update_button_state(cob_srvs::SetString::Request  &req,
 
   if(buttons_map.find( req.data ) != buttons_map.end())
   {
-    ROS_INFO("Setting button state to: %d", (*g_buttons)[buttons_map[req.data]].getVal());
+    //ROS_INFO("Setting button state to: %d", (*g_buttons)[buttons_map[req.data]].getVal());
     if((*g_buttons)[buttons_map[req.data]].getVal())
     {
       res.errorMessage.data = ("Button ON");
@@ -266,7 +266,7 @@ int main(int argc, char **argv)
     {
         ros::spin();
 		loop_rate.sleep();
-		
+		/*
         setStr.request.data = led_mode;
 
         if(led_mode != prev_led_mode)
@@ -284,6 +284,7 @@ int main(int argc, char **argv)
         }
 
         prev_led_mode = led_mode;
+        */
 	}
 
 	exit: CPhidget_close((CPhidgetHandle) IFK);
