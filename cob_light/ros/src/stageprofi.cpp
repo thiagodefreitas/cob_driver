@@ -121,16 +121,15 @@ void StageProfi::setColor(color::rgba color)
   }
 
   if(sendData(buffer, MAX_NUM_LEDS*3+4))
-      m_sigColorSet(color);
+      m_sigColorSet(color_tmp);
 
     //char check_command[] = { 'C', '0', '0', '0', '?' };
     //sendData(check_command, 5);
-  }
 }
 
 void StageProfi::setColorMulti(std::vector<color::rgba> &colors)
 {
-  color::rgba color_tmp = color;
+  color::rgba color_tmp;
 
   
   buffer[0] = 0xff; //array command
@@ -155,5 +154,5 @@ void StageProfi::setColorMulti(std::vector<color::rgba> &colors)
   }
 
   if(sendData(buffer, MAX_NUM_LEDS*3+4))
-      m_sigColorSet(color);
+      m_sigColorSet(color_tmp);
 }
